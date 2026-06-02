@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مشاور حقوقی هوشمند</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Vazir Font -->
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet" type="text/css" />
+    
+    <style>
+        * {
+            font-family: 'Vazir', 'Inter', system-ui, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+        }
+        
+        /* انیمیشن برای پیام‌ها */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .message-animation {
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        /* اسکرول بار سفارشی */
+        .chat-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-scroll::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        
+        .chat-scroll::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 10px;
+        }
+        
+        /* افکت شیشه‌ای */
+        .glass {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(99, 102, 241, 0.2);
+        }
+        
+        /* دکمه ارسال */
+        .send-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .send-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+        }
+        
+        /* خطوط متحرک پس‌زمینه */
+        .line {
+            position: fixed;
+            bottom: -100px;
+            width: 2px;
+            height: 100px;
+            background: linear-gradient(180deg, transparent, rgba(99, 102, 241, 0.3), transparent);
+            animation: rise 8s linear infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        @keyframes rise {
+            0% {
+                transform: translateY(0);
+                opacity: 0;
+            }
+            20% {
+                opacity: 0.6;
+            }
+            80% {
+                opacity: 0.3;
+            }
+            100% {
+                transform: translateY(-120vh);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body class="text-white">
+
+<!-- خطوط متحرک پس‌زمینه -->
+<div id="lines-container"></div>
+
+<div class="relative z-10 min-h-screen flex flex-col">
+    <!-- هدر -->
+    <header class="glass border-b border-indigo-500/20 sticky top-0 z-20">
+        <div class="container mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <i class="fas fa-gavel text-indigo-400 text-2xl"></i>
+                <h1 class="font-bold text-xl bg-gradient-to-r from-indigo-400 to-purple-400 bg-clip-text text-transparent">
+                    عدالت‌یار | مشاور حقوقی هوشمند
+                </h1>
+            </div>
+            <div class="flex items-center gap-2 text-sm text-gray-400">
+                <i class="fas fa-balance-scale text-indigo-400"></i>
+                <span>بر اساس قوانین ایران</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- محتوای اصلی -->
+    <main class="flex-1 container mx-auto px-4 py-6 flex flex-col max-w-4xl">
+        <!-- نوار بالای چت -->
+        <div class="flex justify-between items-center mb-4 flex-wrap gap-3">
+            <div class="flex items-center gap-2">
+                <i class="fas fa-comments text-indigo-400"></i>
+                <h2 class="text-lg font-semibold">مکالمه</h2>
+            </div>
+            <button id="clearChatBtn" class="text-sm text-gray-400 hover:text-red-400 transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-white/5">
+                <i class="fas fa-trash-alt"></i>
+                پاک کردن تاریخچه
+            </button>
+        </div>
+
+        <!-- باکس چت -->
+        <div class="glass rounded-2xl flex flex-col h-[70vh] overflow-hidden">
+            <!-- پیام‌ها -->
+            <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4 chat-scroll">
+                <div class="flex flex-col items-center justify-center h-full text-center py-12">
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4">
+                        <i class="fas fa-scale-balanced text-4xl text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">سوال حقوقی خود را مطرح کنید</h3>
+                    <p class="text-gray-400 text-sm mb-6">مشاور هوشمند بر اساس قوانین ایران پاسخ می‌دهد</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg">
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            مراحل طلاق توافقی چگونه است؟
+                        </button>
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            سهم الارث فرزندان چقدر است؟
+                        </button>
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            قوانین افزایش اجاره بها در سال ۱۴۰۳
+                        </button>
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            چگونه یک قرارداد کاری معتبر بنویسم؟
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ناحیه ورودی -->
+            <div class="border-t border-indigo-500/20 p-4">
+                <div class="flex gap-3 items-end">
+                    <textarea id="messageInput" rows="1" placeholder="سوال حقوقی خود را بنویسید..." 
+                        class="flex-1 bg-gray-900/50 border border-indigo-500/30 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-indigo-400 transition-colors text-sm resize-none"
+                        style="min-height: 48px; max-height: 150px;"></textarea>
+                    <button id="sendBtn" class="send-btn h-12 w-12 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:shadow-lg hover:shadow-indigo-500/25 text-white flex items-center justify-center transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+                <p class="text-xs text-gray-500 text-center mt-3">
+                    💡 نکته: پاسخ‌ها بر اساس قوانین جمهوری اسلامی ایران ارائه می‌شود و صرفاً جنبه اطلاع‌رسانی دارد
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- فوتر -->
+    <footer class="border-t border-indigo-500/20 py-4 text-center text-gray-500 text-sm">
+        <p>© 2024 عدالت‌یار - این ابزار صرفاً جنبه مشاوره مقدماتی دارد و جایگزین وکیل رسمی نیست</p>
+    </footer>
+</div>
+
+<script>
+    // ========== تنظیمات ==========
+    // برای اتصال به API واقعی، این آدرس را تغییر دهید
+    // مثال: http://localhost:3000/api/chat
+    const API_URL = null; // اگر null باشد از پاسخ‌های شبیه‌سازی شده استفاده می‌شود
+    
+    // ========== ایجاد خطوط متحرک ==========
+    function createFloatingLines() {
+        const container = document.getElementById('lines-container');
+        if (!container) return;
+        
+        for (let i = 0; i < 30; i++) {
+            const line = document.createElement('div');
+            line.className = 'line';
+            line.style.left = `${Math.random() * 100}%`;
+            line.style.animationDelay = `${Math.random() * 8}s`;
+            line.style.animationDuration = `${6 + Math.random() * 6}s`;
+            line.style.height = `${40 + Math.random() * 80}px`;
+            line.style.width = `${1 + Math.random() * 3}px`;
+            container.appendChild(line);
+        }
+    }
+    
+    // ========== مدیریت پیام‌ها ==========
+    let messages = [];
+    let isLoading = false;
+    
+    // ذخیره در localStorage
+    function saveMessages() {
+        localStorage.setItem('legal_chat_messages', JSON.stringify(messages));
+    }
+    
+    function loadMessages() {
+        const saved = localStorage.getItem('legal_chat_messages');
+        if (saved) {
+            try {
+                messages = JSON.parse(saved);
+                renderMessages();
+            } catch(e) {}
+        }
+    }
+    
+    // پاسخ هوشمند شبیه‌سازی شده (برای دمو)
+    async function getSimulatedResponse(question) {
+        // شبیه‌سازی تاخیر شبکه
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        const lowerQuestion = question.toLowerCase();
+        
+        if (lowerQuestion.includes('طلاق') || lowerQuestion.includes('خلع')) {
+            return `**طلاق در حقوق ایران**
+
+طلاق به دو نوع انجام می‌شود:
+
+1. **طلاق توافقی**: زمانی که زوجین به توافق کامل می‌رسند.
+2. **طلاق غیرتوافقی**: که خود شامل طلاق از سوی زوج (رجعی یا بائن) و طلاق از سوی زوجه (طلاق وکالتی یا دادخواست) است.
+
+برای طلاق غیرتوافقی، ارائه دادخواست به دادگاه خانواده و طی مراحل داوری الزامی است.
+
+> 💡 **نکته مهم**: مهریه، نفقه و حضانت فرزندان از مسائل مهم در پرونده‌های طلاق هستند.`;
+        }
+        
+        if (lowerQuestion.includes('ارث') || lowerQuestion.includes('میراث')) {
+            return `**ارث در قانون مدنی ایران**
+
+طبقات ارث:
+
+- **طبقه اول**: پدر، مادر، اولاد (فرزندان) و نوادگان.
+- **طبقه دوم**: اجداد، برادر، خواهر و فرزندان آنها.
+- **طبقه سوم**: اعمام، عمات، اخوال، خالات و فرزندان آنها.
+
+سهم الارث مردان معمولاً دو برابر زنان است (مگر در موارد خاص). همچنین وصیت تا حداکثر یک‌سوم اموال امکان‌پذیر است.`;
+        }
+        
+        if (lowerQuestion.includes('اجاره') || lowerQuestion.includes('مستاجر')) {
+            return `**قانون روابط موجر و مستاجر**
+
+طبق قانون سال ۱۳۷۶:
+
+- **مدت اجاره**: در قرارداد مشخص می‌شود و تخلف از آن ضمان اجرا دارد.
+- **حق فسخ**: هر یک از طرفین در صورت تخلف دیگری می‌تواند قرارداد را فسخ کند.
+- **اجاره‌بها**: افزایش سالانه مطابق مصوبه شورای عالی کار یا توافق طرفین.
+- **تخلیه**: پس از پایان مدت اجاره، مستاجر موظف به تخلیه است مگر اینکه تمدید شده باشد.`;
+        }
+        
+        if (lowerQuestion.includes('قرارداد') || lowerQuestion.includes('مکتوب')) {
+            return `**نکات مهم در تنظیم قرارداد**
+
+یک قرارداد معتبر باید شامل موارد زیر باشد:
+
+1. **قصد طرفین** و رضایت آنها
+2. **اهلیت قانونی** (عاقل، بالغ، غیرمحجور)
+3. **موضوع معین** و مشروع
+4. **سبب مشروع** (دلیل قانونی)
+
+✅ قرارداد حتی اگر مکتوب نباشد نیز معتبر است، اما نوشتن آن برای اثبات در دادگاه ضروری است.`;
+        }
+        
+        if (lowerQuestion.includes('شکایت') || lowerQuestion.includes('شاکی')) {
+            return `**مراحل شکایت کیفری**
+
+1. **تنظیم شکواییه** در دفاتر خدمات الکترونیک قضایی
+2. **ارجاع به بازپرسی** یا دادگاه کیفری
+3. **تحقیقات مقدماتی** (استماع اظهارات، استعلامات)
+4. **صدور کیفرخواست** (در صورت وجود ادله کافی)
+5. **جلسه دادگاه** و صدور رأی
+6. **مرحله تجدیدنظر** (در صورت اعتراض)
+
+> 📌 توجه: برای برخی جرایم مانند سرقت تا سقف ۲۰ میلیون تومان، امکان صلح و سازش در شورای حل اختلاف وجود دارد.`;
+        }
+        
+        return `**پاسخ مشاور حقوقی**
+
+با سلام و احترام،
+
+سوال شما: "${question.slice(0, 100)}${question.length > 100 ? '...' : ''}"
+
+این سوال نیازمند بررسی دقیق‌تری است. لطفاً اطلاعات بیشتری مانند:
+
+- استان و شهری که در آن ساکن هستید
+- مدارک مرتبط با موضوع
+- تاریخ وقوع رویدادها
+
+را ارائه دهید تا مشاوره دقیق‌تری دریافت کنید.
+
+همچنین می‌توانید برای مشاوره تخصصی‌تر با شماره **۱۲۹** (سامانه پاسخگویی قوه قضائیه) تماس بگیرید.
+
+موفق باشید.`;
+    }
+    
+    // ارسال درخواست به API یا شبیه‌ساز
+    async function sendToAPI(userMessage) {
+        if (API_URL) {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: userMessage,
+                        history: messages
+                    })
+                });
+                
+                if (!response.ok) throw new Error('خطا در ارتباط با سرور');
+                const data = await response.json();
+                return data.response || data.message || 'پاسخی دریافت نشد';
+            } catch (error) {
+                console.error('API Error:', error);
+                return `❌ خطا در ارتباط با سرور: ${error.message}\n\nلطفاً بعداً مجدد تلاش کنید.`;
+            }
+        } else {
+            return await getSimulatedResponse(userMessage);
+        }
+    }
+    
+    // نمایش پیام به صورت تایپینگ
+    async function displayTypingMessage(content, messageElement) {
+        let displayedText = '';
+        const chars = content.split('');
+        
+        for (let i = 0; i < chars.length; i++) {
+            displayedText += chars[i];
+            messageElement.innerHTML = formatMarkdown(displayedText);
+            // اسکرول به پایین
+            const chatContainer = document.getElementById('chatMessages');
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+    }
+    
+    // تبدیل ساده Markdown به HTML
+    function formatMarkdown(text) {
+        let html = text;
+        // عنوان‌ها
+        html = html.replace(/^### (.*$)/gm, '<h3 class="text-purple-300 font-bold mt-2 mb-1">$1</h3>');
+        html = html.replace(/^## (.*$)/gm, '<h2 class="text-indigo-300 font-bold mt-3 mb-2 text-lg">$1</h2>');
+        html = html.replace(/^\* \*\*(.*?)\*\*: (.*$)/gm, '<li class="mr-4 mb-1"><strong class="text-indigo-300">$1:</strong> $2</li>');
+        html = html.replace(/^\d\. \*\*(.*?)\*\*: (.*$)/gm, '<li class="mr-4 mb-1"><strong class="text-indigo-300">$1:</strong> $2</li>');
+        html = html.replace(/^\d\. (.*$)/gm, '<li class="mr-4 mb-1">$1</li>');
+        html = html.replace(/^\* (.*$)/gm, '<li class="mr-4 mb-1">$1</li>');
+        html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-indigo-300">$1</strong>');
+        html = html.replace(/\n\n/g, '</p><p class="mb-2">');
+        html = html.replace(/\n/g, '<br>');
+        html = '<div class="markdown-body leading-relaxed">' + html + '</div>';
+        
+        return html;
+    }
+    
+    // رندر کردن پیام‌ها
+    function renderMessages() {
+        const container = document.getElementById('chatMessages');
+        if (!container) return;
+        
+        if (messages.length === 0) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-center py-12">
+                    <div class="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center mb-4">
+                        <i class="fas fa-scale-balanced text-4xl text-indigo-400"></i>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">سوال حقوقی خود را مطرح کنید</h3>
+                    <p class="text-gray-400 text-sm mb-6">مشاور هوشمند بر اساس قوانین ایران پاسخ می‌دهد</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 w-full max-w-lg">
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            مراحل طلاق توافقی چگونه است؟
+                        </button>
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            سهم الارث فرزندان چقدر است؟
+                        </button>
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            قوانین افزایش اجاره بها در سال ۱۴۰۳
+                        </button>
+                        <button class="sample-question text-right p-3 rounded-xl bg-white/5 hover:bg-white/10 transition-all text-sm text-gray-300 border border-white/10">
+                            چگونه یک قرارداد کاری معتبر بنویسم؟
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // attach events to sample questions
+            document.querySelectorAll('.sample-question').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const question = btn.innerText;
+                    document.getElementById('messageInput').value = question;
+                    sendMessage();
+                });
+            });
+            return;
+        }
+        
+        let html = '';
+        for (const msg of messages) {
+            const isUser = msg.role === 'user';
+            html += `
+                <div class="flex gap-3 message-animation ${isUser ? 'flex-row-reverse' : ''}">
+                    <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isUser ? 'bg-indigo-500/20' : 'bg-purple-500/20'}">
+                        <i class="${isUser ? 'fas fa-user text-indigo-400' : 'fas fa-robot text-purple-400'} text-sm"></i>
+                    </div>
+                    <div class="max-w-[80%] rounded-xl px-5 py-3 ${isUser ? 'bg-indigo-500/20' : 'bg-gray-800/40'}">
+                        ${isUser ? 
+                            `<p class="text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(msg.content)}</p>` : 
+                            formatMarkdown(msg.content)
+                        }
+                    </div>
+                </div>
+            `;
+        }
+        container.innerHTML = html;
+        container.scrollTop = container.scrollHeight;
+    }
+    
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+    
+    // ارسال پیام
+    async function sendMessage() {
+        if (isLoading) return;
+        
+        const input = document.getElementById('messageInput');
+        const message = input.value.trim();
+        if (!message) return;
+        
+        isLoading = true;
+        
+        // اضافه کردن پیام کاربر
+        messages.push({ role: 'user', content: message });
+        saveMessages();
+        renderMessages();
+        
+        // پاک کردن اینپوت
+        input.value = '';
+        input.style.height = 'auto';
+        
+        // اضافه کردن جای خالی برای پاسخ
+        messages.push({ role: 'assistant', content: '' });
+        renderMessages();
+        
+        try {
+            // دریافت پاسخ از API یا شبیه‌ساز
+            const response = await sendToAPI(message);
+            
+            // به روز رسانی پیام آخر با پاسخ
+            messages[messages.length - 1].content = response;
+            saveMessages();
+            renderMessages();
+            
+        } catch (error) {
+            console.error('Error:', error);
+            messages[messages.length - 1].content = '❌ خطایی رخ داد. لطفاً دوباره تلاش کنید.';
+            saveMessages();
+            renderMessages();
+        } finally {
+            isLoading = false;
+            document.getElementById('sendBtn').disabled = false;
+        }
+    }
+    
+    // پاک کردن تاریخچه
+    function clearChat() {
+        if (confirm('آیا از پاک کردن تاریخچه چت اطمینان دارید؟')) {
+            messages = [];
+            saveMessages();
+            renderMessages();
+        }
+    }
+    
+    // auto-resize textarea
+    function autoResizeTextarea(textarea) {
+        textarea.style.height = 'auto';
+        textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    }
+    
+    // ========== راه‌اندازی ==========
+    document.addEventListener('DOMContentLoaded', () => {
+        createFloatingLines();
+        loadMessages();
+        
+        const sendBtn = document.getElementById('sendBtn');
+        const input = document.getElementById('messageInput');
+        const clearBtn = document.getElementById('clearChatBtn');
+        
+        sendBtn.addEventListener('click', sendMessage);
+        clearBtn.addEventListener('click', clearChat);
+        
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+        
+        input.addEventListener('input', function() {
+            autoResizeTextarea(this);
+        });
+        
+        // attach sample questions after render
+        const observer = new MutationObserver(() => {
+            document.querySelectorAll('.sample-question').forEach(btn => {
+                btn.removeEventListener('click', () => {});
+                btn.addEventListener('click', () => {
+                    const question = btn.innerText;
+                    input.value = question;
+                    autoResizeTextarea(input);
+                    sendMessage();
+                });
+            });
+        });
+        observer.observe(document.getElementById('chatMessages'), { childList: true, subtree: true });
+    });
+    
+    // نمایش آدرس API در کنسول برای راهنمایی
+    if (!API_URL) {
+        console.log('ℹ️ حالت دمو: از پاسخ‌های شبیه‌سازی شده استفاده می‌شود');
+        console.log('🔧 برای اتصال به API واقعی، متغیر API_URL را در خط ۱۷۲ تنظیم کنید');
+    } else {
+        console.log(`✅ متصل به API: ${API_URL}`);
+    }
+</script>
+
+</body>
+</html>
